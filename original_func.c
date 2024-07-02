@@ -16,27 +16,31 @@
 
 int getkey(void)
 {
-	struct termios oldt, newt;
-	int ch;
-	int oldf;
-	tcgetattr(STDIN_FILENO, &oldt);
-	newt = oldt;
-	newt.c_lflag &= ~(ICANON | ECHO);
-	tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-	oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
-	fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
-	ch = getchar();
-	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-	fcntl(STDIN_FILENO, F_SETFL, oldf);
-	if (ch != EOF) {
-		return ch;
-	}
-	return 0;
+    struct termios oldt, newt;
+    int ch;
+    int oldf;
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+    fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+    ch = getchar();
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    fcntl(STDIN_FILENO, F_SETFL, oldf);
+    if (ch != EOF)
+    {
+        return ch;
+    }
+    return 0;
 }
 
-void *play_sound(void *arg) {
-    while (1) {
-        if(system("play phone.wav --no-show-progress 2>/dev/null") != 0) {
+void *play_sound(void *arg)
+{
+    while (1)
+    {
+        if (system("play phone.wav --no-show-progress 2>/dev/null") != 0)
+        {
             perror("system");
             exit(1);
         };
@@ -348,7 +352,7 @@ int conversation(int s, int N)
                 if (isAllAs(read_text))
                 {
                     mode = 0;
-                    
+
                     printf("file sending is canceled\n");
                     printf("mode is changed to audio\n");
                     break;
@@ -511,24 +515,30 @@ int conversation(int s, int N)
             }
             else if (mode == 0 && strcmp(input_tmp, "m") == 0)
             {
-                if (mute_mode) {
+                if (mute_mode)
+                {
                     printf("Already mute mode\n");
                 }
-                else {
+                else
+                {
                     mute_mode = 1;
                     printf("Moved to mute mode\n");
                 }
             }
-            else if (strcmp(input_tmp, "s") == 0) {
-                if (mute_mode) {
+            else if (strcmp(input_tmp, "s") == 0)
+            {
+                if (mute_mode)
+                {
                     mute_mode = 0;
                     printf("Moved to speaker mode\n");
                 }
-                else {
+                else
+                {
                     printf("Already speaker mode\n");
                 }
             }
-            else if (strcmp(input_tmp, "q") == 0) break;
+            else if (strcmp(input_tmp, "q") == 0)
+                break;
             else
             {
                 printf("invalid command: %s", input);
@@ -577,7 +587,7 @@ int make_socket_for_server(int port_number)
         close(ss);
         exit(1);
     }
-    
+
     struct sockaddr_in client_addr;
     socklen_t len = sizeof(struct sockaddr_in);
     int s;
@@ -586,12 +596,14 @@ int make_socket_for_server(int port_number)
     int flags = fcntl(ss, F_GETFL, 0);
     fcntl(ss, F_SETFL, flags | O_NONBLOCK);
     pthread_t tid;
-    if (pthread_create(&tid, NULL, play_sound, NULL) != 0) {
+    if (pthread_create(&tid, NULL, play_sound, NULL) != 0)
+    {
         perror("pthread_create");
         exit(1);
     }
 
-    while (1) {
+    while (1)
+    {
         fd_set readfds;
         FD_ZERO(&readfds);
         FD_SET(ss, &readfds);
@@ -602,16 +614,21 @@ int make_socket_for_server(int port_number)
 
         int activity = select(ss + 1, &readfds, NULL, NULL, &tv);
 
-        if (activity < 0) {
+        if (activity < 0)
+        {
             perror("select");
             exit(1);
         }
 
-        if (FD_ISSET(ss, &readfds)) {
+        if (FD_ISSET(ss, &readfds))
+        {
             s = accept(ss, (struct sockaddr *)&client_addr, &len);
-            if (s == -1) {
+            if (s == -1)
+            {
                 perror("accept");
-            } else {
+            }
+            else
+            {
                 printf("Connected!\n");
                 break;
             }
@@ -633,7 +650,6 @@ int make_socket_for_server(int port_number)
     // close(ss);
     // printf("Connected!\n");
     // return s;
-
 }
 
 int make_socket_for_client(int port_number, char *ip_number)
