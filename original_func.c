@@ -201,7 +201,7 @@ int conversation(int s, int N)
                 }
             }
 
-            if (FD_ISSET(s, &writefds))
+            if (FD_ISSET(s, &writefds) && mute_mode == 0)
             {
                 speak_n = fread(speak, sizeof(unsigned char), N, fp_rec);
                 if (speak_n == -1)
@@ -248,6 +248,7 @@ int conversation(int s, int N)
                 if (isAllAs(read_text))
                 {
                     mode = 0;
+                    mute_mode = 0;
                     printf("mode is changed to audio\n");
                 }
                 else if (isAllFs(read_text))
@@ -291,6 +292,7 @@ int conversation(int s, int N)
                 if (isAllAs(read_text))
                 {
                     mode = 0;
+                    mute_mode = 0;
                     printf("mode is changed to audio\n");
                 }
                 else if (isAllTs(read_text))
@@ -346,6 +348,7 @@ int conversation(int s, int N)
                 if (isAllAs(read_text))
                 {
                     mode = 0;
+                    
                     printf("file sending is canceled\n");
                     printf("mode is changed to audio\n");
                     break;
@@ -459,6 +462,7 @@ int conversation(int s, int N)
                 if (mode != 0)
                 {
                     mode = 0;
+                    mute_mode = 0;
                     send(s, all_As, N, 0);
                     fread(buffer, 1, sizeof(buffer), fp_rec);
                     fread(buffer, 1, sizeof(buffer), fp_play);
