@@ -134,6 +134,7 @@ int conversation(int s, int N)
     maxfd = maxfd > STDOUT_FILENO ? maxfd : STDOUT_FILENO;
     int speak_n;
     int listen_n;
+    int mute_mode = 0;
 
     char mode = 0;
     char buffer[16384];
@@ -156,41 +157,6 @@ int conversation(int s, int N)
         FD_SET(s, &readfds);
         FD_ZERO(&writefds);
         FD_SET(s, &writefds);
-
-
-        // char key = getkey();
-
-        // speak_n = fread(speak, sizeof(unsigned char), N, fp_rec);
-        // if (speak_n == -1) {
-        //     perror("fread");
-        //     exit(1);
-        // }
-        // if (speak_n == 0) break;
-
-        // if (key) {
-        //     printf("You entered %c\n", key); //debug
-        //     if (key == 'm') {
-        //         if (mute_mode) {
-        //             printf("Already mute mode\n");
-        //         }
-        //         else {
-        //             mute_mode = 1;
-        //             printf("Moved to mute mode\n");
-        //         }
-        //     }
-        //     if (key == 's') {
-        //         if (mute_mode) {
-        //             mute_mode = 0;
-        //             printf("Moved to speaker mode\n");
-        //         }
-        //         else {
-        //             printf("Already speaker mode\n");
-        //         }
-        //     }
-        //     if (key == 'q') break;
-        // }
-
-        // if (mute_mode) memset(speak, 0, speak_n);
 
         if (mode == 0)
         {
@@ -539,6 +505,26 @@ int conversation(int s, int N)
                 send(s, input, N, 0);
                 printf("send complete!: %s", input);
             }
+            else if (mode == 0 && strcmp(input_tmp, "m") == 0)
+            {
+                if (mute_mode) {
+                    printf("Already mute mode\n");
+                }
+                else {
+                    mute_mode = 1;
+                    printf("Moved to mute mode\n");
+                }
+            }
+            else if (strcmp(input_tmp, "s") == 0) {
+                if (mute_mode) {
+                    mute_mode = 0;
+                    printf("Moved to speaker mode\n");
+                }
+                else {
+                    printf("Already speaker mode\n");
+                }
+            }
+            else if (strcmp(input_tmp, "q") == 0) break;
             else
             {
                 printf("invalid command: %s", input);
@@ -587,14 +573,14 @@ int make_socket_for_server(int port_number)
         close(ss);
         exit(1);
     }
-
-    int flags = fcntl(ss, F_GETFL, 0);
-    fcntl(ss, F_SETFL, flags | O_NONBLOCK);
-
+    
     struct sockaddr_in client_addr;
     socklen_t len = sizeof(struct sockaddr_in);
     int s;
 
+    // 発信音ありの場合
+    int flags = fcntl(ss, F_GETFL, 0);
+    fcntl(ss, F_SETFL, flags | O_NONBLOCK);
     pthread_t tid;
     if (pthread_create(&tid, NULL, play_sound, NULL) != 0) {
         perror("pthread_create");
@@ -631,6 +617,19 @@ int make_socket_for_server(int port_number)
     pthread_join(tid, NULL);
     close(ss);
     return s;
+
+    // 発信音なしの場合
+    // s = accept(ss, (struct sockaddr *)&client_addr, &len);
+    // if (s == -1)
+    // {
+    //     perror("accept");
+    //     close(ss);
+    //     exit(1);
+    // }
+    // close(ss);
+    // printf("Connected!\n");
+    // return s;
+
 }
 
 int make_socket_for_client(int port_number, char *ip_number)
