@@ -622,7 +622,7 @@ int make_socket_for_server(int port_number)
             if (s == -1) {
                 perror("accept");
             } else {
-                printf("Connection Succeeded!\n");
+                printf("Connected!\n");
                 break;
             }
         }
