@@ -12,6 +12,7 @@
 #include "original.h"
 #include <fcntl.h>
 #include <termios.h>
+#include <pthread.h>
 
 int getkey(void)
 {
@@ -31,6 +32,16 @@ int getkey(void)
 		return ch;
 	}
 	return 0;
+}
+
+void *play_sound(void *arg) {
+    while (1) {
+        if(system("play phone.wav --no-show-progress 2>/dev/null") != 0) {
+            perror("system");
+            exit(1);
+        };
+    }
+    return NULL;
 }
 
 int isAllTs(const unsigned char *input)
@@ -123,7 +134,6 @@ int conversation(int s, int N)
     maxfd = maxfd > STDOUT_FILENO ? maxfd : STDOUT_FILENO;
     int speak_n;
     int listen_n;
-    int mute_mode = 0;
 
     char mode = 0;
     char buffer[16384];
@@ -578,18 +588,48 @@ int make_socket_for_server(int port_number)
         exit(1);
     }
 
-    // accept
+    int flags = fcntl(ss, F_GETFL, 0);
+    fcntl(ss, F_SETFL, flags | O_NONBLOCK);
+
     struct sockaddr_in client_addr;
     socklen_t len = sizeof(struct sockaddr_in);
-    int s = accept(ss, (struct sockaddr *)&client_addr, &len);
-    if (s == -1)
-    {
-        perror("accept");
-        close(ss);
+    int s;
+
+    pthread_t tid;
+    if (pthread_create(&tid, NULL, play_sound, NULL) != 0) {
+        perror("pthread_create");
         exit(1);
     }
+
+    while (1) {
+        fd_set readfds;
+        FD_ZERO(&readfds);
+        FD_SET(ss, &readfds);
+
+        struct timeval tv;
+        tv.tv_sec = 0;
+        tv.tv_usec = 100000; // 0.1 sec
+
+        int activity = select(ss + 1, &readfds, NULL, NULL, &tv);
+
+        if (activity < 0) {
+            perror("select");
+            exit(1);
+        }
+
+        if (FD_ISSET(ss, &readfds)) {
+            s = accept(ss, (struct sockaddr *)&client_addr, &len);
+            if (s == -1) {
+                perror("accept");
+            } else {
+                printf("Connection Succeeded!\n");
+                break;
+            }
+        }
+    }
+    pthread_cancel(tid);
+    pthread_join(tid, NULL);
     close(ss);
-    printf("Connected!\n");
     return s;
 }
 
