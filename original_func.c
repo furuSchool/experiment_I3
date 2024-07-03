@@ -14,6 +14,31 @@
 #include <termios.h>
 #include <pthread.h>
 
+unsigned int raw_to_uchar(unsigned char audiodata[], char* audioname) {
+    FILE *file = fopen(audioname, "rb");
+    if (!file) {
+        perror("fopen");
+        return 1;
+    }
+
+    // ファイルサイズを取得
+    fseek(file, 0, SEEK_END);
+    unsigned int dataSize = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    // audiodataに音声データを読み取り
+    if (fread(audiodata, 1, dataSize, file) != dataSize) {
+        perror("fread");
+        fclose(file);
+        return 1;
+    }
+
+    fclose(file);
+
+    printf("RAWファイルの音声データを読み込みました。データサイズ: %u バイト\n", dataSize);
+    return dataSize;
+}
+
 int getkey(void)
 {
     struct termios oldt, newt;
@@ -139,6 +164,9 @@ int conversation(int s, int N)
     int speak_n;
     int listen_n;
     int mute_mode = 0;
+
+    unsigned int datasize = 0;
+    unsigned char audiodata[1000000];
 
     char mode = 0;
     char buffer[16384];
@@ -539,7 +567,10 @@ int conversation(int s, int N)
             }
             else if (strcmp(input_tmp, "q") == 0)
                 break;
-            else
+            else if (strcmp(input_tmp, "a") == 0 && mode == 0){
+                datasize = raw_to_uchar(audiodata, "a.wav");
+                send(s, audiodata, datasize, 0);
+            }else
             {
                 printf("invalid command: %s", input);
             }
